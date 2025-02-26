@@ -1,8 +1,17 @@
+mod tool_claim_collateral;
 mod tool_new;
 mod tool_register;
+mod tool_unregister;
 mod tool_validate;
 
-use {crate::prelude::*, tool_new::*, tool_register::*, tool_validate::*};
+use {
+    crate::prelude::*,
+    tool_claim_collateral::*,
+    tool_new::*,
+    tool_register::*,
+    tool_unregister::*,
+    tool_validate::*,
+};
 
 #[derive(Subcommand)]
 pub(crate) enum ToolCommand {
@@ -37,17 +46,6 @@ pub(crate) enum ToolCommand {
     },
 
     Register {
-        /// The ident of the Tool to register.
-        #[command(flatten)]
-        ident: ToolIdent,
-        /// The gas coin object ID. First coin object is chosen if not present.
-        #[arg(
-            long = "sui-gas-coin",
-            short = 'g',
-            help = "The gas coin object ID. First coin object is chosen if not present.",
-            value_name = "OBJECT_ID"
-        )]
-        sui_gas_coin: Option<sui::ObjectID>,
         /// The collateral coin object ID. Second coin object is chosen if not
         /// present.
         #[arg(
@@ -57,15 +55,35 @@ pub(crate) enum ToolCommand {
             value_name = "OBJECT_ID"
         )]
         sui_collateral_coin: Option<sui::ObjectID>,
-        /// The gas budget for registering a Tool.
+        /// The ident of the Tool to register.
+        #[command(flatten)]
+        ident: ToolIdent,
+        #[command(flatten)]
+        gas: GasArgs,
+    },
+
+    Unregister {
         #[arg(
-            long = "sui-gas-budget",
-            short = 'b',
-            help = "The gas budget for registering a Tool",
-            value_name = "AMOUNT",
-            default_value_t = sui::MIST_PER_SUI / 10
+            long = "tool-fqn",
+            short = 't',
+            help = "The FQN of the tool to unregister.",
+            value_name = "FQN"
         )]
-        sui_gas_budget: u64,
+        tool_fqn: ToolFqn,
+        #[command(flatten)]
+        gas: GasArgs,
+    },
+
+    ClaimCollateral {
+        #[arg(
+            long = "tool-fqn",
+            short = 't',
+            help = "The FQN of the tool to claim the collateral for.",
+            value_name = "FQN"
+        )]
+        tool_fqn: ToolFqn,
+        #[command(flatten)]
+        gas: GasArgs,
     },
 }
 
@@ -94,9 +112,7 @@ pub(crate) struct ToolIdent {
 /// Useful struct holding Tool metadata.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub(crate) struct ToolMeta {
-    // TODO: <https://github.com/Talus-Network/nexus-sdk/issues/17>
-    // Deser into the struct should check that the FQN is valid.
-    pub(crate) fqn: String,
+    pub(crate) fqn: ToolFqn,
     pub(crate) url: String,
     pub(crate) input_schema: serde_json::Value,
     pub(crate) output_schema: serde_json::Value,
@@ -119,9 +135,26 @@ pub(crate) async fn handle(command: ToolCommand) -> AnyResult<(), NexusCliError>
         // == `$ nexus tool register` ==
         ToolCommand::Register {
             ident,
-            sui_gas_coin,
+            gas,
             sui_collateral_coin,
-            sui_gas_budget,
-        } => register_tool(ident, sui_gas_coin, sui_collateral_coin, sui_gas_budget).await,
+        } => {
+            register_tool(
+                ident,
+                gas.sui_gas_coin,
+                sui_collateral_coin,
+                gas.sui_gas_budget,
+            )
+            .await
+        }
+
+        // == `$ nexus tool unregister` ==
+        ToolCommand::Unregister { tool_fqn, gas } => {
+            unregister_tool(tool_fqn, gas.sui_gas_coin, gas.sui_gas_budget).await
+        }
+
+        // == `$ nexus tool claim-collateral` ==
+        ToolCommand::ClaimCollateral { tool_fqn, gas } => {
+            claim_collateral(tool_fqn, gas.sui_gas_coin, gas.sui_gas_budget).await
+        }
     }
 }
