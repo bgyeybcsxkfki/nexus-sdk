@@ -1,34 +1,31 @@
 use {
     crate::{command_title, confirm, loading, prelude::*, sui::*},
-    move_core_types::ident_str,
+    nexus_types::idents::{move_std, workflow},
 };
-
-/// Sui `std::ascii::string`
-const SUI_ASCII_MODULE: &sui::MoveIdentStr = ident_str!("ascii");
-const SUI_ASCII_FROM_STRING: &sui::MoveIdentStr = ident_str!("string");
-
-/// Nexus `tool_registry::unregister_off_chain_tool`
-const NEXUS_TOOL_REGISTRY_MODULE: &sui::MoveIdentStr = ident_str!("tool_registry");
-// TODO: The name of this fn will likely change.
-const NEXUS_UNREGISTER_TOOL: &sui::MoveIdentStr = ident_str!("unregister_off_chain_tool");
 
 /// Unregister a Tool based on the provided FQN.
 pub(crate) async fn unregister_tool(
     tool_fqn: ToolFqn,
     sui_gas_coin: Option<sui::ObjectID>,
     sui_gas_budget: u64,
+    skip_confirmation: bool,
 ) -> AnyResult<(), NexusCliError> {
     command_title!("Unregistering Tool '{tool_fqn}'");
 
-    confirm!("Unregistering a Tool will make all DAGs using it invalid. Do you want to proceed?");
+    if !skip_confirmation {
+        confirm!(
+            "Unregistering a Tool will make all DAGs using it invalid. Do you want to proceed?"
+        );
+    }
 
     // Load CLI configuration.
     let conf = CliConf::load().await.unwrap_or_else(|_| CliConf::default());
 
-    // Workflow package and tool registry IDs must be present.
+    // Nexus objects must be present in the configuration.
     let NexusObjects {
         workflow_pkg_id,
         tool_registry_object_id,
+        ..
     } = get_nexus_objects(&conf)?;
 
     // Create wallet context, Sui client and find the active address.
@@ -74,7 +71,7 @@ pub(crate) async fn unregister_tool(
     );
 
     // Sign and submit the TX.
-    sign_transaction(&sui, &wallet, tx_data).await
+    sign_transaction(&sui, &wallet, tx_data).await.map(|_| ())
 }
 
 /// Build a programmable transaction to unregister a Tool.
@@ -93,15 +90,7 @@ fn prepare_transaction(
     })?;
 
     // `fqn: AsciiString`
-    let fqn = tx.pure(tool_fqn.to_string().as_bytes())?;
-
-    let fqn = tx.programmable_move_call(
-        sui::MOVE_STDLIB_PACKAGE_ID,
-        SUI_ASCII_MODULE.into(),
-        SUI_ASCII_FROM_STRING.into(),
-        vec![],
-        vec![fqn],
-    );
+    let fqn = move_std::Ascii::ascii_string_from_str(&mut tx, tool_fqn.to_string())?;
 
     // `clock: &Clock`
     let clock = tx.obj(sui::ObjectArg::SharedObject {
@@ -113,8 +102,8 @@ fn prepare_transaction(
     // `nexus::tool_registry::unregister_tool()`
     tx.programmable_move_call(
         workflow_pkg_id,
-        NEXUS_TOOL_REGISTRY_MODULE.into(),
-        NEXUS_UNREGISTER_TOOL.into(),
+        workflow::ToolRegistry::UNREGISTER_TOOL.module.into(),
+        workflow::ToolRegistry::UNREGISTER_TOOL.name.into(),
         vec![],
         vec![tool_registry, fqn, clock],
     );

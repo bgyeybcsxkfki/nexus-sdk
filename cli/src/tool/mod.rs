@@ -35,9 +35,10 @@ pub(crate) enum ToolCommand {
             long = "target",
             short = 'd',
             help = "The target directory to create the tool in",
-            default_value = "./"
+            default_value = "./",
+            value_parser = ValueParser::from(expand_tilde)
         )]
-        target: String,
+        target: PathBuf,
     },
 
     #[command(about = "Validate a tool based on its identifier.")]
@@ -74,6 +75,9 @@ pub(crate) enum ToolCommand {
             value_name = "FQN"
         )]
         tool_fqn: ToolFqn,
+        /// Whether to skip the confirmation prompt.
+        #[arg(long = "yes", short = 'y', help = "Skip the confirmation prompt")]
+        skip_confirmation: bool,
         #[command(flatten)]
         gas: GasArgs,
     },
@@ -153,8 +157,18 @@ pub(crate) async fn handle(command: ToolCommand) -> AnyResult<(), NexusCliError>
         }
 
         // == `$ nexus tool unregister` ==
-        ToolCommand::Unregister { tool_fqn, gas } => {
-            unregister_tool(tool_fqn, gas.sui_gas_coin, gas.sui_gas_budget).await
+        ToolCommand::Unregister {
+            tool_fqn,
+            gas,
+            skip_confirmation,
+        } => {
+            unregister_tool(
+                tool_fqn,
+                gas.sui_gas_coin,
+                gas.sui_gas_budget,
+                skip_confirmation,
+            )
+            .await
         }
 
         // == `$ nexus tool claim-collateral` ==

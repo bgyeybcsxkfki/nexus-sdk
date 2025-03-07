@@ -2,7 +2,6 @@ use {
     crate::{command_title, loading, prelude::*},
     convert_case::{Case, Casing},
     minijinja::{context, Environment},
-    std::path::Path,
     tokio::{
         fs::{create_dir_all, File},
         io::AsyncWriteExt,
@@ -55,9 +54,12 @@ impl ToolTemplate {
 pub(crate) async fn create_new_tool(
     name: String,
     template: ToolTemplate,
-    target: String,
+    target: PathBuf,
 ) -> AnyResult<(), NexusCliError> {
-    command_title!("Creating a new Nexus Tool '{name}' with template '{template:?}' in '{target}'");
+    command_title!(
+        "Creating a new Nexus Tool '{name}' with template '{template:?}' in '{target}'",
+        target = target.display()
+    );
 
     let transforming_template = loading!("Transforming template...");
 
@@ -76,7 +78,7 @@ pub(crate) async fn create_new_tool(
     let writing_file = loading!("Writing template files...");
 
     // Create the tool's root directory.
-    let root_directory = Path::new(&target).join(&name);
+    let root_directory = target.join(&name);
 
     if let Err(e) = create_dir_all(root_directory).await {
         writing_file.error();
@@ -85,7 +87,7 @@ pub(crate) async fn create_new_tool(
     };
 
     for (path, content) in files {
-        let path = Path::new(&target).join(&name).join(&path);
+        let path = target.join(&name).join(&path);
 
         // Check if we need to create a directory.
         let content = match content {
@@ -131,7 +133,7 @@ mod tests {
         let result = create_new_tool(
             "test".to_string(),
             ToolTemplate::Rust,
-            "/tmp/nexus-tool".to_string(),
+            PathBuf::from("/tmp/nexus-tool"),
         )
         .await;
 

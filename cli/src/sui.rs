@@ -1,7 +1,6 @@
 use {
     crate::{loading, prelude::*},
     reqwest::{header, Client, StatusCode},
-    sui_sdk::rpc_types::SuiTransactionBlockEffectsAPI,
 };
 
 /// Build Sui client for the provided Sui net.
@@ -227,14 +226,15 @@ pub(crate) async fn sign_transaction(
     sui: &sui::Client,
     wallet: &sui::WalletContext,
     tx_data: sui::TransactionData,
-) -> AnyResult<(), NexusCliError> {
+) -> AnyResult<sui::TransactionBlockResponse, NexusCliError> {
     let signing_handle = loading!("Signing transaction...");
 
     let envelope = wallet.sign_transaction(&tx_data);
 
     let resp_options = sui::TransactionBlockResponseOptions::new()
         .with_balance_changes()
-        .with_effects();
+        .with_effects()
+        .with_object_changes();
 
     // We want to confirm that the tx was executed (the name of this variant is
     // misleading).
@@ -263,13 +263,13 @@ pub(crate) async fn sign_transaction(
     }
 
     // Check if any effects failed in the TX.
-    if let Some(sui::TransactionBlockEffects::V1(effect)) = response.effects {
-        if let sui::ExecutionStatus::Failure { error } = effect.into_status() {
+    if let Some(sui::TransactionBlockEffects::V1(effect)) = &response.effects {
+        if let sui::ExecutionStatus::Failure { error } = effect.clone().into_status() {
             signing_handle.error();
 
             return Err(NexusCliError::Any(anyhow!(error)));
         }
-    }
+    };
 
     signing_handle.success();
 
@@ -279,7 +279,7 @@ pub(crate) async fn sign_transaction(
         digest = response.digest.to_string().truecolor(100, 100, 100)
     );
 
-    Ok(())
+    Ok(response)
 }
 
 /// Fetch a single object from Sui by its ID.
@@ -343,23 +343,35 @@ pub(crate) async fn fetch_object_by_id(
 pub(crate) fn get_nexus_objects(conf: &CliConf) -> AnyResult<NexusObjects, NexusCliError> {
     let objects_handle = loading!("Loading Nexus object IDs configuration...");
 
-    match (conf.nexus.workflow_id, conf.nexus.tool_registry_id) {
-        (Some(wid), Some(trid)) => {
+    match (
+        conf.nexus.workflow_pkg_id,
+        conf.nexus.primitives_pkg_id,
+        conf.nexus.tool_registry_object_id,
+        conf.nexus.default_sap_object_id,
+        conf.nexus.network_id,
+    ) {
+        (Some(wid), Some(pid), Some(trid), Some(dsid), Some(nid)) => {
             objects_handle.success();
 
             Ok(NexusObjects {
                 workflow_pkg_id: wid,
+                primitives_pkg_id: pid,
                 tool_registry_object_id: trid,
+                default_sap_object_id: dsid,
+                network_id: nid,
             })
         }
         _ => {
             objects_handle.error();
 
             Err(NexusCliError::Any(anyhow!(
-                "{message}\n\n{workflow_command}\n{tool_registry_command}",
-                message = "The Nexus Workflow package ID and Tool Registry object ID must be set. Use the following commands to update the configuration:",
-                workflow_command = "$ nexus conf --nexus.workflow-id <ID>".bold(),
-                tool_registry_command = "$ nexus conf --nexus.tool-registry-id <ID>".bold()
+                "{message}\n\n{workflow_command}\n{primitives_command}\n{tool_registry_command}\n{default_sap_command}\n{network_command}",
+                message = "References to Nexus objects are missing in the CLI configuration. Use the following commands to update it:",
+                workflow_command = "$ nexus conf --nexus.workflow-pkg-id <ID>".bold(),
+                primitives_command = "$ nexus conf --nexus.primitives-pkg-id <ID>".bold(),
+                tool_registry_command = "$ nexus conf --nexus.tool-registry-object-id <ID>".bold(),
+                default_sap_command = "$ nexus conf --nexus.default-sap-object-id <ID>".bold(),
+                network_command = "$ nexus conf --nexus.network-id <ID>".bold()
             )))
         }
     }

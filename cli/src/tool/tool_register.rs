@@ -6,16 +6,8 @@ use {
         sui::*,
         tool::{tool_validate::*, ToolIdent, ToolMeta},
     },
-    move_core_types::ident_str,
+    nexus_types::idents::{move_std, workflow},
 };
-
-/// Sui `std::ascii::string`
-const SUI_ASCII_MODULE: &sui::MoveIdentStr = ident_str!("ascii");
-const SUI_ASCII_FROM_STRING: &sui::MoveIdentStr = ident_str!("string");
-
-// Nexus `tool_registry::register_off_chain_tool`
-const NEXUS_TOOL_REGISTRY_MODULE: &sui::MoveIdentStr = ident_str!("tool_registry");
-const NEXUS_REGISTER_OFF_CHAIN_TOOL: &sui::MoveIdentStr = ident_str!("register_off_chain_tool");
 
 /// Validate and then register a new Tool.
 pub(crate) async fn register_tool(
@@ -37,10 +29,11 @@ pub(crate) async fn register_tool(
     // Load CLI configuration.
     let conf = CliConf::load().await.unwrap_or_else(|_| CliConf::default());
 
-    // Workflow package and tool registry IDs must be present.
+    // Nexus objects must be present in the configuration.
     let NexusObjects {
         workflow_pkg_id,
         tool_registry_object_id,
+        ..
     } = get_nexus_objects(&conf)?;
 
     // Create wallet context, Sui client and find the active address.
@@ -100,7 +93,7 @@ pub(crate) async fn register_tool(
     );
 
     // Sign and submit the TX.
-    sign_transaction(&sui, &wallet, tx_data).await
+    sign_transaction(&sui, &wallet, tx_data).await.map(|_| ())
 }
 
 /// Fetch the gas and collateral coins from the Sui client. On Localnet, Devnet
@@ -179,15 +172,7 @@ fn prepare_transaction(
     })?;
 
     // `fqn: AsciiString`
-    let fqn = tx.pure(meta.fqn.to_string().as_bytes())?;
-
-    let fqn = tx.programmable_move_call(
-        sui::MOVE_STDLIB_PACKAGE_ID,
-        SUI_ASCII_MODULE.into(),
-        SUI_ASCII_FROM_STRING.into(),
-        vec![],
-        vec![fqn],
-    );
+    let fqn = move_std::Ascii::ascii_string_from_str(&mut tx, meta.fqn.to_string())?;
 
     // `url: vector<u8>`
     let url = tx.pure(meta.url.to_string().as_bytes())?;
@@ -203,11 +188,13 @@ fn prepare_transaction(
         collateral_coin.object_ref(),
     ))?;
 
-    // `nexus::tool_registry::register_off_chain_tool()`
+    // `nexus_workflow::tool_registry::register_off_chain_tool()`
     tx.programmable_move_call(
         workflow_pkg_id,
-        NEXUS_TOOL_REGISTRY_MODULE.into(),
-        NEXUS_REGISTER_OFF_CHAIN_TOOL.into(),
+        workflow::ToolRegistry::REGISTER_OFF_CHAIN_TOOL
+            .module
+            .into(),
+        workflow::ToolRegistry::REGISTER_OFF_CHAIN_TOOL.name.into(),
         vec![],
         vec![
             tool_registry,

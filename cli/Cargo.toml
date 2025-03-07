@@ -10,6 +10,7 @@ colored.workspace = true
 convert_case.workspace = true
 home.workspace = true
 minijinja.workspace = true
+petgraph.workspace = true
 reqwest.workspace = true
 serde.workspace = true
 serde_json.workspace = true
@@ -18,16 +19,13 @@ tokio.workspace = true
 toml.workspace = true
 
 # === Nexus deps ===
-nexus-types.workspace = true
-
-
-# === Sui deps ===
-sui_sdk.workspace = true
-move_core_types.workspace = true
+[dependencies.nexus-types]
+workspace = true
+features = ["full"]
 
 [dev-dependencies]
-nexus-toolkit.workspace = true
-
 assert_matches = "1.5.0"
-schemars = "0.8.21"
+schemars.workspace = true
 warp = "0.3.7"
+
+nexus-toolkit.workspace = true
