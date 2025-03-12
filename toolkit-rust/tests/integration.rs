@@ -29,10 +29,6 @@ impl NexusTool for DummyTool {
         fqn!("xyz.dummy.tool@1")
     }
 
-    fn url() -> Url {
-        Url::parse("http://localhost:8080").unwrap()
-    }
-
     async fn health() -> AnyResult<StatusCode> {
         Ok(StatusCode::OK)
     }
@@ -54,8 +50,8 @@ impl NexusTool for Dummy500Tool {
         fqn!("xyz.dummy.tool@1")
     }
 
-    fn url() -> Url {
-        Url::parse("http://localhost:8080").unwrap()
+    fn path() -> &'static str {
+        "path"
     }
 
     async fn health() -> AnyResult<StatusCode> {
@@ -75,10 +71,9 @@ mod tests {
 
     #[tokio::test]
     #[serial]
-
     async fn test_endpoints_generated_correctly() {
         tokio::spawn(async move {
-            bootstrap::<DummyTool>(([127, 0, 0, 1], 8080)).await;
+            bootstrap!(DummyTool);
         });
 
         let meta = Client::new()
@@ -134,11 +129,11 @@ mod tests {
     #[serial]
     async fn test_422_when_input_malformed() {
         tokio::spawn(async move {
-            bootstrap::<DummyTool>(([127, 0, 0, 1], 8080)).await;
+            bootstrap!(([127, 0, 0, 1], 8081), DummyTool);
         });
 
         let invoke = Client::new()
-            .post("http://localhost:8080/invoke")
+            .post("http://localhost:8081/invoke")
             .json(&json!({ "invalid": "Hello, world!" }))
             .send()
             .await
@@ -154,12 +149,10 @@ mod tests {
     #[tokio::test]
     #[serial]
     async fn test_500_when_execution_fails() {
-        tokio::spawn(async move {
-            bootstrap::<Dummy500Tool>(([127, 0, 0, 1], 8080)).await;
-        });
+        tokio::spawn(async move { bootstrap!([Dummy500Tool]) });
 
         let invoke = Client::new()
-            .post("http://localhost:8080/invoke")
+            .post("http://localhost:8080/path/invoke")
             .json(&json!({ "prompt": "Hello, world!" }))
             .send()
             .await
@@ -171,5 +164,49 @@ mod tests {
 
         assert_eq!(invoke_json["error"], "tool_invocation_error");
         assert_eq!(invoke_json["details"], "Something went wrong");
+
+        // Default health ep exists.
+        let health = Client::new()
+            .get("http://localhost:8080/health")
+            .send()
+            .await
+            .unwrap();
+
+        assert_eq!(health.status(), 200);
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_multiple_tools() {
+        tokio::spawn(async move { bootstrap!([DummyTool, Dummy500Tool]) });
+
+        // Invoke /path tool.
+        let invoke = Client::new()
+            .post("http://localhost:8080/path/invoke")
+            .json(&json!({ "prompt": "Hello, world!" }))
+            .send()
+            .await
+            .unwrap();
+
+        assert_eq!(invoke.status(), 500);
+
+        let invoke_json = invoke.json::<serde_json::Value>().await.unwrap();
+
+        assert_eq!(invoke_json["error"], "tool_invocation_error");
+        assert_eq!(invoke_json["details"], "Something went wrong");
+
+        // Invoke / tool.
+        let invoke = Client::new()
+            .post("http://localhost:8080/invoke")
+            .json(&json!({ "invalid": "Hello, world!" }))
+            .send()
+            .await
+            .unwrap();
+
+        assert_eq!(invoke.status(), 422);
+
+        let invoke_json = invoke.json::<serde_json::Value>().await.unwrap();
+
+        assert_eq!(invoke_json["error"], "input_deserialization_error");
     }
 }

@@ -147,11 +147,6 @@ impl NexusTool for OpenaiChatCompletion {
         fqn!("xyz.taluslabs.llm.openai.chat-completion@1")
     }
 
-    /// Returns the URL of the tool.
-    fn url() -> Url {
-        Url::parse("http://localhost:8080").unwrap()
-    }
-
     /// Performs a health check on the tool's dependencies.
     ///
     /// # Returns
@@ -263,7 +258,7 @@ impl NexusTool for OpenaiChatCompletion {
 /// This function bootstraps the tool and starts the server.
 #[tokio::main]
 async fn main() {
-    bootstrap::<OpenaiChatCompletion>(([127, 0, 0, 1], 8080)).await;
+    bootstrap!(OpenaiChatCompletion)
 }
 
 #[cfg(test)]

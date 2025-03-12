@@ -3426,7 +3426,7 @@ dependencies = [
  "nexus-toolkit",
  "nexus-types",
  "reqwest",
- "schemars",
+ "schemars 1.0.0-alpha.17",
  "serde",
  "serde_json",
  "strum 0.27.1",
@@ -3492,6 +3492,17 @@ name = "matchit"
 version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0e7465ac9959cc2b1404e8e2367b43684a6d13790fe23056cc8c6c5a6b7bcb94"
+
+[[package]]
+name = "math"
+version = "0.1.0"
+dependencies = [
+ "nexus-toolkit",
+ "nexus-types",
+ "schemars 1.0.0-alpha.17",
+ "serde",
+ "tokio",
+]
 
 [[package]]
 name = "md-5"
@@ -4122,6 +4133,7 @@ dependencies = [
  "schemars 1.0.0-alpha.17",
  "serde",
  "serde_json",
+ "serial_test",
  "thiserror 2.0.11",
  "tokio",
  "toml 0.8.20",
