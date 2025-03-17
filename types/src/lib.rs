@@ -16,3 +16,15 @@ pub mod idents;
 /// Re-exporting Sui types into something that makes more sense.
 #[cfg(feature = "sui_types")]
 pub mod sui;
+
+/// Nexus types represent the structure of various different objects and defined
+/// on-chain. It also provides the logic for serializing and deserializing these
+/// objects.
+#[cfg(feature = "types")]
+pub mod types;
+
+/// Nexus events that are fired by the Nexus workflow package and are used to
+/// communicate between the on-chain and off-chain parts of Nexus. This module
+/// also contains the logic for serializing and deserializing these events.
+#[cfg(feature = "events")]
+pub mod events;

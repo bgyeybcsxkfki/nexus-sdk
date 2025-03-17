@@ -1,5 +1,11 @@
 use {
-    crate::{command_title, loading, prelude::*, sui::*},
+    crate::{
+        command_title,
+        dag::dag_inspect_execution::inspect_dag_execution,
+        loading,
+        prelude::*,
+        sui::*,
+    },
     nexus_types::idents::{primitives, sui_framework, workflow},
 };
 
@@ -10,6 +16,7 @@ pub(crate) async fn execute_dag(
     input_json: serde_json::Value,
     sui_gas_coin: Option<sui::ObjectID>,
     sui_gas_budget: u64,
+    inspect: bool,
 ) -> AnyResult<(), NexusCliError> {
     command_title!("Executing Nexus DAG '{dag_id}'");
 
@@ -79,7 +86,42 @@ pub(crate) async fn execute_dag(
     );
 
     // Sign and send the TX.
-    let _response = sign_transaction(&sui, &wallet, tx_data).await?;
+    let response = sign_transaction(&sui, &wallet, tx_data).await?;
+
+    // We need to parse the DAGExecution object ID from the response.
+    let dag = response
+        .object_changes
+        .unwrap_or_default()
+        .into_iter()
+        .find_map(|change| match change {
+            sui::ObjectChange::Created {
+                object_type,
+                object_id,
+                ..
+            } if object_type.address == *workflow_pkg_id
+                && object_type.module == workflow::Dag::DAG_EXECUTION.module.into()
+                && object_type.name == workflow::Dag::DAG_EXECUTION.name.into() =>
+            {
+                Some(object_id)
+            }
+            _ => None,
+        });
+
+    let Some(object_id) = dag else {
+        return Err(NexusCliError::Any(anyhow!(
+            "Could not find the DAGExecution object ID in the transaction response."
+        )));
+    };
+
+    println!(
+        "[{check}] DAGExecution object ID: {id}",
+        check = "✔".green().bold(),
+        id = object_id.to_string().truecolor(100, 100, 100)
+    );
+
+    if inspect {
+        inspect_dag_execution(object_id, response.digest).await?;
+    }
 
     Ok(())
 }
