@@ -3,8 +3,8 @@
 //! Standard Nexus Tool that multiplies two [`i64`] numbers and returns the result.
 
 use {
+    nexus_sdk::{fqn, ToolFqn},
     nexus_toolkit::*,
-    nexus_types::*,
     schemars::JsonSchema,
     serde::{Deserialize, Serialize},
 };

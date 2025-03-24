@@ -2,7 +2,7 @@
 
 use {
     anyhow::Result as AnyResult,
-    nexus_types::ToolFqn,
+    nexus_sdk::ToolFqn,
     reqwest::Url,
     schemars::JsonSchema,
     serde::{de::DeserializeOwned, Serialize},
