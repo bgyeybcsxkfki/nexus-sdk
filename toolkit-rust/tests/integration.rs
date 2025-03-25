@@ -78,17 +78,17 @@ impl NexusTool for DummyErrTool {
 
 #[cfg(test)]
 mod tests {
-    use {super::*, reqwest::Client, serde_json::json, serial_test::serial};
+    use {super::*, reqwest::Client, serde_json::json};
 
     #[tokio::test]
-    #[serial]
     async fn test_endpoints_generated_correctly() {
-        tokio::spawn(async move {
-            bootstrap!(DummyTool);
-        });
+        tokio::spawn(async move { bootstrap!(([127, 0, 0, 1], 8043), DummyTool) });
+
+        // Give the webserver some time to start.
+        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
 
         let meta = Client::new()
-            .get("http://localhost:8080/meta")
+            .get("http://localhost:8043/meta")
             .send()
             .await
             .unwrap();
@@ -98,7 +98,7 @@ mod tests {
         let meta_json = meta.json::<serde_json::Value>().await.unwrap();
 
         assert_eq!(meta_json["fqn"], "xyz.dummy.tool@1");
-        assert_eq!(meta_json["url"], "http://localhost:8080/");
+        assert_eq!(meta_json["url"], "http://localhost:8043/");
         assert_eq!(
             meta_json["input_schema"]["properties"]["prompt"]["type"],
             "string"
@@ -110,7 +110,7 @@ mod tests {
         );
 
         let health = Client::new()
-            .get("http://localhost:8080/health")
+            .get("http://localhost:8043/health")
             .send()
             .await
             .unwrap();
@@ -118,7 +118,7 @@ mod tests {
         assert_eq!(health.status(), 200);
 
         let invoke = Client::new()
-            .post("http://localhost:8080/invoke")
+            .post("http://localhost:8043/invoke")
             .json(&json!({ "prompt": "Hello, world!" }))
             .send()
             .await
@@ -137,14 +137,14 @@ mod tests {
     }
 
     #[tokio::test]
-    #[serial]
     async fn test_422_when_input_malformed() {
-        tokio::spawn(async move {
-            bootstrap!(([127, 0, 0, 1], 8081), DummyTool);
-        });
+        tokio::spawn(async move { bootstrap!(([127, 0, 0, 1], 8044), DummyTool) });
+
+        // Give the webserver some time to start.
+        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
 
         let invoke = Client::new()
-            .post("http://localhost:8081/invoke")
+            .post("http://localhost:8044/invoke")
             .json(&json!({ "invalid": "Hello, world!" }))
             .send()
             .await
@@ -158,12 +158,14 @@ mod tests {
     }
 
     #[tokio::test]
-    #[serial]
-    async fn test_err_when_execution_fails() {
-        tokio::spawn(async move { bootstrap!([DummyErrTool]) });
+    async fn test_500_when_execution_fails() {
+        tokio::spawn(async move { bootstrap!(([127, 0, 0, 1], 8045), [DummyErrTool]) });
+
+        // Give the webserver some time to start.
+        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
 
         let invoke = Client::new()
-            .post("http://localhost:8080/path/invoke")
+            .post("http://localhost:8045/path/invoke")
             .json(&json!({ "prompt": "Hello, world!" }))
             .send()
             .await
@@ -182,7 +184,7 @@ mod tests {
 
         // Default health ep exists.
         let health = Client::new()
-            .get("http://localhost:8080/health")
+            .get("http://localhost:8045/health")
             .send()
             .await
             .unwrap();
@@ -191,13 +193,15 @@ mod tests {
     }
 
     #[tokio::test]
-    #[serial]
     async fn test_multiple_tools() {
-        tokio::spawn(async move { bootstrap!([DummyTool, DummyErrTool]) });
+        tokio::spawn(async move { bootstrap!(([127, 0, 0, 1], 8046), [DummyTool, DummyErrTool]) });
+
+        // Give the webserver some time to start.
+        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
 
         // Invoke /path tool.
         let invoke = Client::new()
-            .post("http://localhost:8080/path/invoke")
+            .post("http://localhost:8046/path/invoke")
             .json(&json!({ "prompt": "Hello, world!" }))
             .send()
             .await
@@ -216,7 +220,7 @@ mod tests {
 
         // Invoke / tool.
         let invoke = Client::new()
-            .post("http://localhost:8080/invoke")
+            .post("http://localhost:8046/invoke")
             .json(&json!({ "invalid": "Hello, world!" }))
             .send()
             .await

@@ -25,6 +25,7 @@ pub use {
             ObjectChange,
             SuiEvent as Event,
             SuiExecutionStatus as ExecutionStatus,
+            SuiObjectData as ObjectData,
             SuiObjectDataFilter as ObjectDataFilter,
             SuiObjectDataOptions as ObjectDataOptions,
             SuiObjectRef as ObjectRef,
@@ -38,7 +39,7 @@ pub use {
         types::{
             base_types::{ObjectID, SequenceNumber, SuiAddress as Address},
             crypto::SignatureScheme,
-            digests::TransactionDigest,
+            digests::{ObjectDigest, TransactionDigest},
             dynamic_field::{DynamicFieldInfo, DynamicFieldName},
             event::EventID,
             gas_coin::MIST_PER_SUI,

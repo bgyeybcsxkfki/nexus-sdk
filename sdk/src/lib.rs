@@ -28,3 +28,13 @@ pub mod types;
 /// also contains the logic for serializing and deserializing these events.
 #[cfg(feature = "events")]
 pub mod events;
+
+/// Object crawler attempts to improve the Sui SDK obejct fetching by allowing
+/// direct parsing into structs.
+#[cfg(feature = "object_crawler")]
+pub mod object_crawler;
+
+/// Test utils container management for Sui and Redis, faucet, Move code
+/// compilation and deployment and similar.
+#[cfg(feature = "test_utils")]
+pub mod test_utils;

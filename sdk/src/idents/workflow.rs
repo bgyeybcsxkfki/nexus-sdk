@@ -15,6 +15,13 @@ impl DefaultSap {
         module: DEFAULT_SAP_MODULE,
         name: sui::move_ident_str!("begin_dag_execution"),
     };
+    /// The DefaultSap struct type.
+    ///
+    /// `nexus_workflow::default_sap::DefaultSAP`
+    pub const DEFAULT_SAP: ModuleAndNameIdent = ModuleAndNameIdent {
+        module: DEFAULT_SAP_MODULE,
+        name: sui::move_ident_str!("DefaultSAP"),
+    };
 }
 
 // == `nexus_workflow::dag` ==
@@ -315,6 +322,13 @@ impl ToolRegistry {
     pub const REGISTER_OFF_CHAIN_TOOL: ModuleAndNameIdent = ModuleAndNameIdent {
         module: TOOL_REGISTRY_MODULE,
         name: sui::move_ident_str!("register_off_chain_tool"),
+    };
+    /// The ToolRegistry struct type.
+    ///
+    /// `nexus_workflow::tool_registry::ToolRegistry`
+    pub const TOOL_REGISTRY: ModuleAndNameIdent = ModuleAndNameIdent {
+        module: TOOL_REGISTRY_MODULE,
+        name: sui::move_ident_str!("ToolRegistry"),
     };
     /// Unregister an tool.
     ///

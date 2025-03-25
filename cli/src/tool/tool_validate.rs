@@ -102,13 +102,7 @@ async fn validate_on_chain_tool(_ident: String) -> AnyResult<ToolMeta, NexusCliE
 
 #[cfg(test)]
 mod tests {
-    use {
-        super::*,
-        nexus_toolkit::*,
-        schemars::JsonSchema,
-        serial_test::serial,
-        warp::http::StatusCode,
-    };
+    use {super::*, nexus_toolkit::*, schemars::JsonSchema, warp::http::StatusCode};
 
     // == Dummy tools setup ==
 
@@ -177,56 +171,53 @@ mod tests {
     }
 
     #[tokio::test]
-    #[serial]
-    async fn test_validate_oks_valid_off_chain_tool() {
-        tokio::spawn(async move { bootstrap!(DummyTool) });
+    async fn test_validate_oks_valid_off_chain_tools() {
+        tokio::spawn(
+            async move { bootstrap!(([127, 0, 0, 1], 8042), [DummyTool, DummyToolWithPath]) },
+        );
 
+        // Give the webserver some time to start.
+        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+
+        // No path with slash
         let meta = validate_tool(ToolIdent {
-            off_chain: Some(reqwest::Url::parse("http://localhost:8080/").unwrap()),
+            off_chain: Some(reqwest::Url::parse("http://localhost:8042/").unwrap()),
             on_chain: None,
         })
         .await;
-
+        println!("{:?}", meta);
         assert!(meta.is_ok());
-
         let meta = meta.unwrap();
-
         assert_eq!(meta.fqn, fqn!("xyz.dummy.tool@1"));
 
-        // No trailing slash in command.
+        // No path no slash
         let meta = validate_tool(ToolIdent {
-            off_chain: Some(reqwest::Url::parse("http://localhost:8080").unwrap()),
+            off_chain: Some(reqwest::Url::parse("http://localhost:8042").unwrap()),
             on_chain: None,
         })
         .await;
-
         assert!(meta.is_ok());
-    }
-
-    #[tokio::test]
-    #[serial]
-    async fn test_validate_oks_valid_off_chain_tool_with_path() {
-        tokio::spawn(async move { bootstrap!(DummyToolWithPath) });
-
-        let meta = validate_tool(ToolIdent {
-            off_chain: Some(reqwest::Url::parse("http://localhost:8080/dummy/tool/").unwrap()),
-            on_chain: None,
-        })
-        .await;
-
-        assert!(meta.is_ok());
-
         let meta = meta.unwrap();
-
         assert_eq!(meta.fqn, fqn!("xyz.dummy.tool@1"));
 
-        // No trailing slash in command.
+        // Path with slash
         let meta = validate_tool(ToolIdent {
-            off_chain: Some(reqwest::Url::parse("http://localhost:8080/dummy/tool").unwrap()),
+            off_chain: Some(reqwest::Url::parse("http://localhost:8042/dummy/tool/").unwrap()),
             on_chain: None,
         })
         .await;
-
         assert!(meta.is_ok());
+        let meta = meta.unwrap();
+        assert_eq!(meta.fqn, fqn!("xyz.dummy.tool@1"));
+
+        // Path no slash
+        let meta = validate_tool(ToolIdent {
+            off_chain: Some(reqwest::Url::parse("http://localhost:8042/dummy/tool").unwrap()),
+            on_chain: None,
+        })
+        .await;
+        assert!(meta.is_ok());
+        let meta = meta.unwrap();
+        assert_eq!(meta.fqn, fqn!("xyz.dummy.tool@1"));
     }
 }
