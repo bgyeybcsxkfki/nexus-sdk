@@ -5,15 +5,17 @@
 
 use {
     chrono::{DateTime, FixedOffset},
-    nexus_toolkit::{AnyResult, StatusCode},
+    log::{debug, error},
+    nexus_toolkit::{AnyResult, StatusCode, WithSerdeErrorPath},
     reqwest::Client,
     serde::Deserialize,
 };
 
-/// The URL of the OpenAI status API.
-const HEALTH_URL: &str = "https://status.openai.com/api/v2/status.json";
+const DEFAULT_HEALTHCHECK_URL: &str = "https://status.openai.com/api/v2/status.json";
 /// The expected status indicator for a healthy API.
-const HEALTH_OK: &str = "none";
+const STATUS_INDICATOR_NONE: &str = "none";
+/// The expected status indicator for an almost healthy API (minor hiccups).
+const STATUS_INDICATOR_MINOR: &str = "minor";
 
 /// Represents the overall response from the OpenAI status API.
 #[allow(dead_code)]
@@ -36,7 +38,7 @@ struct PageInfo {
     /// The URL of the page.
     url: String,
     /// The time zone of the page.
-    time_zone: String,
+    time_zone: Option<String>,
     /// The last time the page was updated.
     updated_at: DateTime<FixedOffset>, // Parsed with original offset
 }
@@ -45,7 +47,7 @@ struct PageInfo {
 #[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 struct StatusInfo {
-    /// The status indicator (e.g., "none", "minor", "major", ...).
+    /// The status indicator (e.g., "none", "minor", "major", "critical", ...).
     indicator: String,
     /// A description of the current status.
     description: String,
@@ -63,12 +65,28 @@ struct StatusInfo {
 /// *   `Err(e)` if there is an error sending the request or parsing the response.
 pub(crate) async fn check_api_health() -> AnyResult<StatusCode> {
     let client = Client::new();
+    let raw_response = client.get(healthcheck_url()).send().await?.text().await?;
+    debug!("Raw API response: {}", raw_response);
 
-    // Send GET request and parse JSON response
-    let response: ApiResponse = client.get(HEALTH_URL).send().await?.json().await?;
-    if response.status.indicator != HEALTH_OK {
+    let wrapped: WithSerdeErrorPath<ApiResponse> = match serde_json::from_str(&raw_response) {
+        Ok(val) => val,
+        Err(e) => {
+            error!("Deserialization error: {}", e);
+            return Ok(StatusCode::INTERNAL_SERVER_ERROR);
+        }
+    };
+
+    let response: ApiResponse = wrapped.0;
+    if !matches!(
+        response.status.indicator.as_str(),
+        STATUS_INDICATOR_NONE | STATUS_INDICATOR_MINOR
+    ) {
         return Ok(StatusCode::SERVICE_UNAVAILABLE);
     }
 
     Ok(StatusCode::OK)
+}
+
+fn healthcheck_url() -> String {
+    std::env::var("HEALTHCHECK_URL").unwrap_or_else(|_| DEFAULT_HEALTHCHECK_URL.to_string())
 }

@@ -25,6 +25,11 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v4
 
+      - name: Increase swapfile
+        uses: ./.github/actions/increase-swapfile
+        with:
+          swap_size: "6G"
+
       # 1.
       - name: Install Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1

@@ -63,7 +63,16 @@ use {
 /// ```
 #[macro_export]
 macro_rules! bootstrap {
+    (@get_addr) => {{
+        let addr_str = std::env::var("BIND_ADDR")
+            .unwrap_or_else(|_| "127.0.0.1:8080".to_string());
+        addr_str
+            .parse::<std::net::SocketAddr>()
+            .expect("Invalid socket address in BIND_ADDR")
+    }};
+
     ($addr:expr, [$tool:ty $(, $next_tool:ty)* $(,)?]) => {{
+        let _ = $crate::env_logger::try_init();
         use {
             $crate::warp::{http::StatusCode, Filter},
         };
@@ -78,22 +87,23 @@ macro_rules! bootstrap {
             .map(|| $crate::warp::reply::with_status("", StatusCode::OK));
 
         let routes = routes.or(default_health_route);
-
         // Serve the routes.
         $crate::warp::serve(routes).run($addr).await
     }};
-    // Default address.
-    ([$($tool:ty),+ $(,)?]) => {
-        bootstrap!(([127, 0, 0, 1], 8080), [$($tool, )*]);
-    };
-    // Only 1 tool.
-    ($addr:expr, $tool:ty) => {
-        bootstrap!($addr, [$tool]);
-    };
-    // Only 1 tool with default address.
-    ($tool:ty) => {
-        bootstrap!(([127, 0, 0, 1], 8080), [$tool]);
-    };
+        // Default address.
+    ([$($tool:ty),+ $(,)?]) => {{
+        let addr = bootstrap!(@get_addr);
+        bootstrap!(addr, [$($tool,)*])
+    }};
+        // Only 1 tool.
+    ($addr:expr, $tool:ty) => {{
+        bootstrap!($addr, [$tool])
+    }};
+        // Only 1 tool with default address.
+    ($tool:ty) => {{
+        let addr = bootstrap!(@get_addr);
+        bootstrap!(addr, [$tool])
+    }};
 }
 
 /// This function generates the necessary routes for a given [NexusTool].

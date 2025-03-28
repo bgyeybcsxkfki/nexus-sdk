@@ -11,6 +11,7 @@ pub(crate) use {
         sync::atomic::{AtomicBool, Ordering},
     },
 };
+
 // Where to find config file.
 pub(crate) const CLI_CONF_PATH: &str = "~/.nexus/conf.toml";
 
@@ -146,9 +147,8 @@ pub(crate) fn parse_json_string(json: &str) -> AnyResult<serde_json::Value> {
 // == Used by serde ==
 
 fn default_sui_wallet_path() -> PathBuf {
-    home::home_dir()
-        .expect("Home dir must exist.")
-        .join(".sui/sui_config/client.yaml")
+    let config_dir = sui::config_dir().expect("Unable to determine SUI config directory");
+    config_dir.join(sui::CLIENT_CONFIG)
 }
 
 #[cfg(test)]
