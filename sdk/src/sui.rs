@@ -26,6 +26,8 @@ pub use {
             ObjectChange,
             SuiEvent as Event,
             SuiExecutionStatus as ExecutionStatus,
+            SuiMoveStruct as MoveStruct,
+            SuiMoveValue as MoveValue,
             SuiObjectData as ObjectData,
             SuiObjectDataFilter as ObjectDataFilter,
             SuiObjectDataOptions as ObjectDataOptions,
@@ -37,6 +39,7 @@ pub use {
             SuiTransactionBlockResponse as TransactionBlockResponse,
             SuiTransactionBlockResponseOptions as TransactionBlockResponseOptions,
         },
+        sui_client_config::{SuiClientConfig, SuiEnv},
         types::{
             base_types::{ObjectID, SequenceNumber, SuiAddress as Address},
             crypto::SignatureScheme,

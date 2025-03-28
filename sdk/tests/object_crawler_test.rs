@@ -76,29 +76,29 @@ async fn test_object_crawler() {
     // Spin up the Sui instance.
     let (_container, rpc_port, faucet_port) = test_utils::containers::setup_sui_instance().await;
 
-    // Build Sui client.
-    let sui = sui::ClientBuilder::default()
-        .build(format!("http://127.0.0.1:{}", rpc_port))
-        .await
-        .expect("Failed to build Sui client");
-
     // Create a wallet and request some gas tokens.
-    let (keystore, addr) =
-        test_utils::wallet::create_test_wallet().expect("Failed to create a wallet.");
+    let (mut wallet, _) = test_utils::wallet::create_ephemeral_wallet_context(rpc_port)
+        .expect("Failed to create a wallet.");
+    let sui = wallet.get_client().await.expect("Could not get Sui client");
+
+    let addr = wallet
+        .active_address()
+        .expect("Failed to get active address.");
 
     test_utils::faucet::request_tokens(&format!("http://127.0.0.1:{faucet_port}/gas"), addr)
         .await
         .expect("Failed to request tokens from faucet.");
 
-    let gas_coin = test_utils::gas::fetch_gas_coin(&sui, addr)
+    let gas_coin = test_utils::gas::fetch_gas_coins(&sui, addr)
         .await
-        .expect("Failed to fetch gas coin.");
+        .expect("Failed to fetch gas coin.")
+        .into_iter()
+        .next()
+        .unwrap();
 
     // Publish test contract and fetch some IDs.
     let response = test_utils::contracts::publish_move_package(
-        &sui,
-        addr,
-        &keystore,
+        &mut wallet,
         "tests/move/object_crawler_test",
         gas_coin,
     )
