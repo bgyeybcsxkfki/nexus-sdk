@@ -21,6 +21,7 @@ async fn main() {
         tweet::like_tweet::LikeTweet,
         tweet::get_mentioned_tweets::GetMentionedTweets,
         tweet::get_user_tweets::GetUserTweets,
+        tweet::get_recent_tweet_count::GetRecentTweetCount,
         tweet::get_recent_search_tweets::GetRecentSearchTweets,
         tweet::unlike_tweet::UnlikeTweet,
         tweet::undo_retweet_tweet::UndoRetweetTweet,
