@@ -670,6 +670,25 @@ pub struct DeleteData {
     pub deleted: bool,
 }
 
+/// Twitter API response for an undo retweet request
+#[derive(Debug, Deserialize)]
+pub struct UndoRetweetResponse {
+    /// Data returned when the request is successful
+    #[serde(default)]
+    pub data: Option<UndoRetweetData>,
+    /// Errors returned when the request fails
+    #[serde(default)]
+    pub errors: Option<Vec<TwitterApiError>>,
+}
+
+/// Data structure for a successful undo retweet response
+#[derive(Debug, Deserialize)]
+pub struct UndoRetweetData {
+    /// Whether the tweet was successfully retweeted
+    pub retweeted: bool,
+}
+
 impl_twitter_response_parser!(RetweetResponse, RetweetData);
 impl_twitter_response_parser!(DeleteResponse, DeleteData);
 impl_twitter_response_parser!(TweetsResponse, Vec<Tweet>, includes = Includes, meta = Meta);
+impl_twitter_response_parser!(UndoRetweetResponse, UndoRetweetData);
