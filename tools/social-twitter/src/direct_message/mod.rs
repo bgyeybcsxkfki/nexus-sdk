@@ -2,6 +2,7 @@
 //!
 //! This module contains tools for Twitter direct message operations.
 
+pub(crate) mod create_group_conversation;
 pub(crate) mod get_conversation_messages;
 pub(crate) mod get_conversation_messages_by_id;
 pub(crate) mod models;
