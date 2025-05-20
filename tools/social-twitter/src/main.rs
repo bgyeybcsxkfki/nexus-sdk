@@ -39,6 +39,7 @@ async fn main() {
         list::remove_member::RemoveMember,
         user::get_user_by_id::GetUserById,
         user::get_user_by_username::GetUserByUsername,
+        direct_message::get_conversation_messages::GetConversationMessages,
         direct_message::send_direct_message::SendDirectMessage,
         user::unfollow_user::UnfollowUser,
         user::get_users_by_username::GetUsersByUsername,
