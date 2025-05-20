@@ -7,3 +7,4 @@ pub(crate) mod get_conversation_messages;
 pub(crate) mod get_conversation_messages_by_id;
 pub(crate) mod models;
 pub(crate) mod send_direct_message;
+pub(crate) mod send_message_to_group_conversation;

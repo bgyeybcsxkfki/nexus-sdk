@@ -370,7 +370,6 @@ impl Message {
         Ok(())
     }
 }
-
 #[derive(Deserialize, JsonSchema)]
 pub struct Attachment {
     /// The media id of the attachment.
