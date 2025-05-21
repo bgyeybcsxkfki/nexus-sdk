@@ -2,12 +2,14 @@
 //!
 //! This module contains tools for Twitter operations.
 #![doc = include_str!("../README.md")]
+#![recursion_limit = "256"]
 
 use nexus_toolkit::bootstrap;
 mod auth;
 mod direct_message;
 mod error;
 mod list;
+mod media;
 mod tweet;
 mod twitter_client;
 mod user;
@@ -36,6 +38,7 @@ async fn main() {
         list::add_member::AddMember,
         list::get_user_lists::GetUserLists,
         list::remove_member::RemoveMember,
+        media::upload_media::UploadMedia,
         user::get_user_by_id::GetUserById,
         user::get_user_by_username::GetUserByUsername,
         user::follow_user::FollowUser,

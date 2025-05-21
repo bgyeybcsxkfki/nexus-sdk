@@ -7,7 +7,7 @@ use {
         auth::TwitterAuth,
         error::{parse_twitter_response, TwitterError, TwitterErrorResponse},
     },
-    reqwest::Client,
+    reqwest::{multipart::Form, Client},
     serde::{de::DeserializeOwned, Serialize},
     serde_json::Value,
     std::sync::Arc,
@@ -22,6 +22,7 @@ pub struct TwitterClient {
 }
 
 pub(crate) const TWITTER_API_BASE: &str = "https://api.twitter.com/2";
+pub(crate) const TWITTER_X_API_BASE: &str = "https://api.x.com/2";
 
 #[derive(Debug, thiserror::Error)]
 pub enum TwitterClientError {
@@ -70,15 +71,14 @@ impl TwitterClient {
     pub async fn post<T, U>(
         &self,
         auth: &TwitterAuth,
-        body: U,
+        body: Option<U>,
+        form: Option<Form>,
     ) -> Result<T::Output, TwitterErrorResponse>
     where
         T: TwitterApiParsedResponse + DeserializeOwned + std::fmt::Debug,
         U: Serialize,
     {
-        let raw_response: T = self
-            .make_request::<T, U>("POST", auth, Some(body), None)
-            .await?;
+        let raw_response: T = self.make_request("POST", auth, body, None, form).await?;
         raw_response.parse_twitter_response()
     }
 
@@ -107,18 +107,19 @@ impl TwitterClient {
         T: TwitterApiParsedResponse + DeserializeOwned + std::fmt::Debug,
     {
         let raw_response = self
-            .make_request::<T, Value>("GET", auth, None, query_params)
+            .make_request::<T, Value>("GET", auth, None, query_params, None)
             .await?;
         raw_response.parse_twitter_response()
     }
 
     /// Makes a PUT request to the Twitter API
+    #[allow(dead_code)]
     pub async fn put<T, U>(&self, auth: &TwitterAuth, body: U) -> Result<T, TwitterErrorResponse>
     where
         T: DeserializeOwned + std::fmt::Debug,
         U: Serialize,
     {
-        self.make_request("PUT", auth, Some(body), None).await
+        self.make_request("PUT", auth, Some(body), None, None).await
     }
 
     /// Makes a DELETE request to the Twitter API
@@ -127,7 +128,7 @@ impl TwitterClient {
         T: TwitterApiParsedResponse + DeserializeOwned + std::fmt::Debug,
     {
         let raw_response: T = self
-            .make_request::<T, serde_json::Value>("DELETE", auth, None, None)
+            .make_request::<T, serde_json::Value>("DELETE", auth, None, None, None)
             .await?;
         raw_response.parse_twitter_response()
     }
@@ -141,6 +142,7 @@ impl TwitterClient {
         auth: &TwitterAuth,
         body: Option<Value>,
         query_params: Option<Vec<(String, String)>>,
+        form: Option<Form>,
     ) -> Result<T, TwitterErrorResponse>
     where
         T: DeserializeOwned + std::fmt::Debug,
@@ -164,9 +166,12 @@ impl TwitterClient {
             &self.api_base,
         );
 
-        request = request
-            .header("Authorization", auth_header)
-            .header("Content-Type", "application/json");
+        request = request.header("Authorization", auth_header);
+
+        // Set appropriate Content-Type header
+        if body.is_some() {
+            request = request.header("Content-Type", "application/json");
+        }
 
         if let Some(body) = body {
             request = request.json(&body);
@@ -175,6 +180,10 @@ impl TwitterClient {
         // Add query parameters if provided
         if let Some(params) = query_params {
             request = request.query(&params);
+        }
+
+        if let Some(form) = form {
+            request = request.multipart(form);
         }
 
         // Network/connection errors
