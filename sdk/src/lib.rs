@@ -48,3 +48,7 @@ pub mod test_utils;
 /// system for storing and retrieving files.
 #[cfg(feature = "walrus")]
 pub mod walrus;
+
+/// Cryptographic primitives including X3DH for secure key exchange
+#[cfg(feature = "crypto")]
+pub mod crypto;

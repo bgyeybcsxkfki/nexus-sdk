@@ -36,6 +36,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Walrus Client module to interact with Walrus decentralized storage
 - `transactions::gas` module containing PTB templates for gas-related transactions
 - support for generating shell completions
+- Added `crypto` module
+- added `x3dh` in `crypto` that implements X3DH key-exchange protocol according to the Signal Specs.
+- added `double_ratchet` in `crypto` that implements Double Ratchet with header encryption.
+- added `session` in `crypto` that glues together X3DH + Double Ratchet for a complete e2d Secure Session Layer.
 
 #### Changed
 
