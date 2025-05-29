@@ -18,17 +18,25 @@ categories = [
 ]
 
 [workspace.dependencies]
+aes-gcm = "0.10"
+aes-siv = "0.7"
 anyhow = "1.0.97"
+argon2 = "0.5"
+base64 = "0.21"
 bip32 = "0.4.0"
+bincode = "1"
 chrono = { version = "0.4", features = ["serde"] }
 clap = { version = "4.5.32", features = ["derive"] }
 clap_complete = "4.5.48"
 colored = "3.0.0"
 convert_case = "0.7.1"
+directories = "5"
 env_logger = "0.11.7"
+hex = "0.4"
 home = "0.5.11"
 indicatif = "0.17.11"
 jsonschema = "0.28.3"
+keyring = "3.6"
 lazy-regex = "3.4.1"
 log = "^0.4.26"
 minijinja = "2.8.0"
@@ -36,6 +44,7 @@ mockito = "1.7.0"
 openssl = { version = "0.10", features = ["vendored"] }
 petgraph = "0.7.1"
 portpicker = "0.1.1"
+rand = { version = "0.8", default-features = false, features = ["std"] }
 regex = "1.11.1"
 reqwest = "0.12.14"
 rstest = "0.25.0"
@@ -53,6 +62,7 @@ tokio = { version = "1.44.1", features = ["full"] }
 tokio-retry = "0.3.0"
 toml = "0.8.20"
 warp = "0.3.7"
+zeroize = "1.7"
 
 # === Nexus deps ===
 nexus-toolkit = { path = "toolkit-rust" }

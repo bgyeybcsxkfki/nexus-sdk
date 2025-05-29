@@ -19,6 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `indicatif` crate to handle progress spinners
 - `--batch` flag to `nexus tool register` command to allow registering multiple tools at once
 - upon tool registration, the CLI will save the owner caps to the CLI conf; these are then used to fall back to if no `--owner-cap` arg is provided for some commands
+- Added `--crypto.generate-identity-key` flag to `nexus conf set` command to generate and store a fresh identity key
+- Added a `secrets` module that provides a wrapper to encrypt and decrypt its inner values
+- `crypto` section to the CLI configuration to save the current state of the `crypto`
 
 #### Changed
 
@@ -42,6 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - added `x3dh` in `crypto` that implements X3DH key-exchange protocol according to the Signal Specs.
 - added `double_ratchet` in `crypto` that implements Double Ratchet with header encryption.
 - added `session` in `crypto` that glues together X3DH + Double Ratchet for a complete e2d Secure Session Layer.
+- Added generic `secret` type interface for encrypting and decrypting wrapped values
 
 #### Changed
 

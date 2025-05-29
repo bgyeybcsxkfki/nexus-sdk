@@ -8,6 +8,7 @@ mod network;
 mod prelude;
 mod sui;
 mod tool;
+mod utils;
 
 use crate::prelude::*;
 
