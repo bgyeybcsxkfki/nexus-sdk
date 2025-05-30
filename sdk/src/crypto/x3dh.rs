@@ -76,7 +76,7 @@ use {
 /// Curve identifier for `Encode(PK)` (see section 2.5 of the X3DH spec).
 const CURVE_ID_X25519: u8 = 0x05;
 /// Maximum ciphertext length accepted in a pre‑key message (**16 KiB**).
-const MAX_PREKEY_MSG: usize = 16 * 1024;
+const MAX_PRE_KEY_MSG: usize = 16 * 1024;
 /// Default string fed into HKDF's `info` field. Overwrite when its needed.
 const HKDF_INFO: &[u8] = b"X3DH";
 
@@ -115,7 +115,7 @@ pub enum X3dhError {
     /// Authenticated encryption error (should be unreachable).
     #[error("AEAD error")]
     Aead,
-    /// Ciphertext length exceeded [`MAX_PREKEY_MSG`].
+    /// Ciphertext length exceeded [`MAX_PRE_KEY_MSG`].
     #[error("ciphertext too large")]
     CiphertextTooLarge,
 }
@@ -269,21 +269,26 @@ impl<'de> Deserialize<'de> for IdentityKey {
 /// * the *Signed Pre‑Key* (SPK) plus its identifier and XEdDSA signature,
 /// * Receiver's long‑term *Identity Key* (`IK_B`),
 /// * **optionally** one *One‑Time Pre‑Key* (OTPK).
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PreKeyBundle {
     /// Identifier of the signed pre‑key.
     pub spk_id: u32,
     /// SPK public key.
+    #[serde(with = "x25519_serde")]
     pub spk_pub: X25519PublicKey,
     /// XEdDSA signature over `Encode(spk_pub)`.
+    #[serde(with = "serde_big_array::BigArray")]
     pub spk_sig: [u8; 64],
     /// Raw bytes of `Ed25519(IK_B)`.
-    /// It allows verify the signature of the SPK.
+    /// It allows for verification of the signature of the SPK.
     pub identity_verify_bytes: [u8; 32],
     /// DH form of Receiver's identity key.
+    #[serde(with = "x25519_serde")]
     pub identity_pk: X25519PublicKey,
     /// Identifier of the accompanying OTPK (if any).
     pub otpk_id: Option<u32>,
     /// OTPK public key.
+    #[serde(with = "option_x25519_serde")]
     pub otpk_pub: Option<X25519PublicKey>,
 }
 
@@ -300,6 +305,7 @@ impl PreKeyBundle {
         // Signature proves possession of IK_B
         let spk_sig = identity.signing.sign(&encode_pk(&spk_pub), &mut OsRng);
         let identity_verify_bytes = *identity.verify.as_bytes();
+
         Self {
             spk_id,
             spk_pub,
@@ -338,9 +344,9 @@ impl PreKeyBundle {
 
 // === Serde helpers ===
 
-/// Serde (de)serialisation for `x25519_dalek::PublicKey`.
+/// Serde (de)serialization for `x25519_dalek::PublicKey`.
 ///
-/// Serialises as a raw 32‑byte string.
+/// Serializes as a raw 32‑byte string.
 pub mod x25519_serde {
     use {
         super::X25519PublicKey,
@@ -386,6 +392,55 @@ pub mod x25519_serde {
         D: Deserializer<'de>,
     {
         deserializer.deserialize_bytes(PublicKeyVisitor)
+    }
+}
+
+/// Serde (de)serialization for `Option<x25519_dalek::PublicKey>`.
+///
+/// Serializes as an optional raw 32‑byte string.
+pub mod option_x25519_serde {
+    use {
+        super::x25519_serde,
+        serde::{Deserializer, Serializer},
+        x25519_dalek::PublicKey as X25519PublicKey,
+    };
+
+    pub fn serialize<S>(maybe: &Option<X25519PublicKey>, ser: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match maybe {
+            Some(pk) => x25519_serde::serialize(pk, ser),
+            None => ser.serialize_none(),
+        }
+    }
+
+    pub fn deserialize<'de, D>(de: D) -> Result<Option<X25519PublicKey>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        // Try to peek – if we see null return None, otherwise parse a PK
+        struct OptVisitor;
+        impl<'de> serde::de::Visitor<'de> for OptVisitor {
+            type Value = Option<X25519PublicKey>;
+
+            fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+                f.write_str("null or a 32-byte X25519 public key")
+            }
+
+            fn visit_none<E>(self) -> Result<Self::Value, E> {
+                Ok(None)
+            }
+
+            fn visit_some<D>(self, de: D) -> Result<Self::Value, D::Error>
+            where
+                D: Deserializer<'de>,
+            {
+                x25519_serde::deserialize(de).map(Some)
+            }
+        }
+
+        de.deserialize_option(OptVisitor)
     }
 }
 
@@ -580,7 +635,7 @@ pub fn receiver_receive(
     ad.extend_from_slice(&encode_pk(&receiver_id.dh_public));
 
     // 4. Size check
-    if msg.ciphertext.len() > MAX_PREKEY_MSG {
+    if msg.ciphertext.len() > MAX_PRE_KEY_MSG {
         return Err(X3dhError::CiphertextTooLarge);
     }
 
@@ -620,7 +675,7 @@ pub struct PreKeyBundleWithSecrets {
 /// * `next_otpk_id` – mutable counter for OTPK ids(used to identify the OTPK)
 /// * `n_otpks` – how many OTPKs to attach (0‑`n`).
 /// Returns a bundle with the SPK and the OTPKs.
-pub fn receiver_generate_prekey_bundle(
+pub fn receiver_generate_pre_key_bundle(
     identity: &IdentityKey,
     spk_id: u32,
     next_otpk_id: &mut u32,
@@ -657,7 +712,7 @@ pub fn receiver_generate_prekey_bundle(
 }
 
 /// Convenience helper: create many bundles in one go (useful for batch upload).
-pub fn receiver_generate_many_prekey_bundles(
+pub fn receiver_generate_many_pre_key_bundles(
     identity: &IdentityKey,
     count: usize,
     next_spk_id: &mut u32,
@@ -666,8 +721,12 @@ pub fn receiver_generate_many_prekey_bundles(
 ) -> Vec<PreKeyBundleWithSecrets> {
     let mut out = Vec::with_capacity(count);
     for _ in 0..count {
-        let bundle =
-            receiver_generate_prekey_bundle(identity, *next_spk_id, next_otpk_id, otpks_per_bundle);
+        let bundle = receiver_generate_pre_key_bundle(
+            identity,
+            *next_spk_id,
+            next_otpk_id,
+            otpks_per_bundle,
+        );
         *next_spk_id = next_spk_id.wrapping_add(1);
         out.push(bundle);
     }

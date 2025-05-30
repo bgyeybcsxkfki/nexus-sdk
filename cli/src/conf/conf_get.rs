@@ -27,7 +27,7 @@ mod tests {
         std::env::set_var("XDG_CONFIG_HOME", secret_home.path());
         std::env::set_var("XDG_DATA_HOME", secret_home.path());
 
-        let tempdir = tempfile::tempdir().unwrap().keep();
+        let tempdir = tempfile::tempdir().unwrap().into_path();
         let path = tempdir.join("conf.toml");
 
         assert!(!tokio::fs::try_exists(&path).await.unwrap());
@@ -40,6 +40,7 @@ mod tests {
             tool_registry: sui_mocks::mock_sui_object_ref(),
             default_sap: sui_mocks::mock_sui_object_ref(),
             gas_service: sui_mocks::mock_sui_object_ref(),
+            pre_key_vault: sui_mocks::mock_sui_object_ref(),
         };
 
         let sui_conf = SuiConf {
