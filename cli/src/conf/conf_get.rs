@@ -2,9 +2,13 @@ use crate::{command_title, prelude::*};
 
 /// Print the current Nexus CLI configuration.
 pub(crate) async fn get_nexus_conf(conf_path: PathBuf) -> AnyResult<CliConf, NexusCliError> {
-    let conf = CliConf::load_from_path(&conf_path)
-        .await
-        .unwrap_or_default();
+    let conf = CliConf::load_from_path(&conf_path).await.map_err(|e| {
+        NexusCliError::Any(anyhow!(
+            "Failed to load Nexus CLI configuration from {}: {}",
+            conf_path.display(),
+            e
+        ))
+    })?;
 
     command_title!("Current Nexus CLI Configuration");
 
@@ -46,8 +50,7 @@ mod tests {
         let sui_conf = SuiConf {
             net: SuiNet::Mainnet,
             wallet_path: tempdir.join("wallet"),
-            auth_user: Some("user".to_string()),
-            auth_password: Some("pass".to_string()),
+            rpc_url: Some(reqwest::Url::parse("https://mainnet.sui.io").unwrap()),
         };
 
         let tools = HashMap::new();

@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `--crypto.generate-identity-key` flag to `nexus conf set` command to generate and store a fresh identity key
 - Added a `secrets` module that provides a wrapper to encrypt and decrypt its inner values
 - `crypto` section to the CLI configuration to save the current state of the `crypto`
+- `nexus conf set --sui.rpc-url` to set a custom Sui RPC URL for the CLI to use
 
 #### Changed
 
@@ -37,10 +38,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Removed
 
 - automated faucet calls for gas and collateral coins
+- basic auth from the CLI configuration
 
 #### Fixed
 
 - `create_wallet_context` takes `SUI_RPC_URL` into consideration when checking active env
+- when `nexus conf get` fails to parse the config it shows the error instead of defaulting
 
 ### `nexus-sdk`
 
