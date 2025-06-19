@@ -36,6 +36,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `nexus crypto key-status` shows where the key was loaded from
 - automatically fetching devnet objects for user ergonomics
 - configured `cargo-deny` rules
+- not failing if a tool is already registered when registering a tool
+- not failing a whole tool registration batch if one of the tools fails to register
 
 #### Changed
 
