@@ -31,8 +31,8 @@ Create a new Tool scaffolding in a folder called `<name>`. Which files are gener
 Validate an off-chain Nexus Tool on the provided URL. This command checks whether the URL hosts a valid Nexus Tool interface:
 
 1. `GET /meta` contains Tool metadata that is later stored in our Tool Registry, this contains the `fqn`, the `url` which should match the one in the command and the Tool input and output schemas. Output schema is also validated to contain a top-level `oneOf` to adhere to Nexus output variant concept.
-2. `GET /health` simple health check endpoint that needs to return a `200 OK` in order for the validation to pass.
-3. `POST /invoke` the CLI can check that the endpoint exists.
+1. `GET /health` simple health check endpoint that needs to return a `200 OK` in order for the validation to pass.
+1. `POST /invoke` the CLI can check that the endpoint exists.
 
 {% hint style="success" %}
 As an improvement, the command could take a `[data]` parameter that invokes the Tool and checks the response against the output schema.
@@ -137,10 +137,10 @@ If you're unsure about the terminology used below, please refer to the [glossary
 {% endhint %}
 
 1. For each entry group...
-2. Find all input ports
-3. For each input port...
-4. Find all paths from relevant entry vertices to this input port
-5. Ensure that net concurrency on that input port node is 0
+1. Find all input ports
+1. For each input port...
+1. Find all paths from relevant entry vertices to this input port
+1. Ensure that net concurrency on that input port node is 0
    - `N` input ports on a tool reduce the graph concurrency by `N - 1` because walks are consumed if they are waiting for more input port data
    - `N` output ports on an output variant increase the graph concurrency by `N - 1` because `N` concurrent walks are spawned, while the 1 leading into the output variant is consumed
    - If net concurrency is `< 0`, the input port can never be reached
