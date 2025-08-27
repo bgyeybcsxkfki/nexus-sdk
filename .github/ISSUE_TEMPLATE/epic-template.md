@@ -31,33 +31,21 @@ assignees: ''
 
 ## Pre-Implementation Checklist
 
-> **Note**: Items completed through RFC/IP process can be checked and referenced. Strike through items not applicable to this release with reasoning.
+> **Note**: This section should reference completed IP process rather than duplicate work. Strike through items not applicable to this release with reasoning.
 
-### Product Design Review
+### Architecture Pipeline Completion
 
-- [ ] **Architectural Review** _(completed via [RFC/IP Link] or create issue #xxx)_
-- [ ] **Finalized Specifications** _(RFC/IP approved or create specification issue #xxx)_
-  - [ ] Unknowns identified and resolved
-  - [ ] Assumptions documented and validated  
-  - [ ] Expectations clearly defined
+- [ ] **Improvement Proposal Approved** _(reference IP-YYYY-MM-DD: [Title] - issue #xxx)_
+  - [ ] Strategic review complete (internal) OR Community consensus achieved (external)
+  - [ ] Technical feasibility confirmed
+  - [ ] All IP comments resolved
+  - [ ] Final approval documented
 
-### Technical Feasibility Analysis  
+### Implementation Prerequisites  
 
-- [ ] **Research Reports & Recommendations** _(create research issue #xxx or reference existing)_
-- [ ] **Upstream Dependency Analysis** _(create analysis issue #xxx or ~strike if not applicable~)_
-  - [ ] Technical Debt impact assessment _(create issue #xxx)_
-  - [ ] Software Licenses & Terms of Service review _(create issue #xxx)_
-  - [ ] Financial Implications documented _(create issue #xxx)_
-- [ ] **Downstream Impact Analysis** _(create analysis issue #xxx)_
-  - [ ] **Technical Debt Assessment** - create issues for each applicable area:
-    - [ ] Protocol changes _(issue #xxx)_
-    - [ ] Smart Contracts _(issue #xxx or ~strike if not applicable~)_
-    - [ ] Infrastructure _(issue #xxx)_
-    - [ ] Developer UX impact _(issue #xxx)_
-  - [ ] **Coordination Efforts** - create tasks for each applicable area:
-    - [ ] Documentation strategy _(issue #xxx defining doc scope)_
-    - [ ] Community communication plan _(issue #xxx)_
-    - [ ] Infrastructure coordination _(issue #xxx)_
+- [ ] **Technical Dependencies Resolved** _(create dependency issues #xxx or reference existing)_
+- [ ] **Resource Allocation Confirmed** _(team assignments and timeline approved)_
+- [ ] **Integration Planning Complete** _(downstream impact analysis from IP)_
 
 ---
 
@@ -204,7 +192,10 @@ assignees: ''
 
 ## Related Links
 
-- **RFC/IP:** [Link to related improvement proposal]
-- **Design Documents:** [Links to design docs]
+- **Improvement Proposal:** [Link to approved IP issue]
+- **Strategic RFC:** [Link to Notion RFC if internal origin]
+- **Community Discussion:** [Link to GitHub Discussion if external origin]
+- **Technical RFC:** [Link to GitHub RFC if applicable]
+- **Design Documents:** [Links to detailed design docs]
 - **Previous Release:** [Link to previous epic]
 - **Next Planned Release:** [Link to next epic if known]
