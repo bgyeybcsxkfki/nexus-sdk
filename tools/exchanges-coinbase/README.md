@@ -81,3 +81,5 @@ The ticker request failed due to an error.
 - **`err.reason`: [`String`]** - A detailed error message describing what went wrong
 - **`err.kind`: [`String`]** - Type of error (invalid_request, not_found, parse, etc.)
 - **`err.status_code`: [`u16`] (optional)** - HTTP status code if available
+
+<!-- Auto-update: 2025-10-19T09:36:59.220749 -->
